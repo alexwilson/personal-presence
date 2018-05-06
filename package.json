@@ -1,0 +1,14 @@
+{
+  "name": "whereisalex.today",
+  "author": "Alex Wilson <a@ax.gy>",
+  "license": "ISC",
+  "scripts": {
+    "start": "node index"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.233.1",
+    "handlebars": "^4.0.11",
+    "node-fetch": "^2.1.2"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,89 @@
+service: personal-presence
+
+frameworkVersion: ">=1.1.0 <2.0.0"
+
+custom:
+  bucket: 'where-is-alex-today'
+
+provider:
+  name: aws
+  runtime: nodejs6.10
+  region: ${opt:region, 'eu-west-1'}
+  stage: ${opt:stage, 'dev'}
+  environment:
+    MOVES_AUTHORIZATION_TOKEN: ${env:MOVES_AUTHORIZATION_TOKEN}
+    MOVES_CLIENT_ID: ${env:MOVES_CLIENT_ID}
+    BUCKET: ${self:custom.bucket}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+      Resource: "arn:aws:s3:::${self:custom.bucket}/*"
+
+functions:
+  refreshState:
+    handler: index.refreshState
+    events:
+      - schedule: rate(15 minutes)
+
+resources:
+  Resources:
+    PersonalPresenceBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: "${self:custom.bucket}"
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+
+    PersonalPresenceBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: PersonalPresenceBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action:
+              - s3:GetObject
+              Resource: "arn:aws:s3:::${self:custom.bucket}/*"
+
+    PersonalPresenceCloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Origins:
+            - DomainName: ${self:custom.bucket}.s3.amazonaws.com
+              Id: PersonalPresence
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: https-only
+          Enabled: 'true'
+          Aliases:
+            - whereisalex.today
+          DefaultRootObject: index.html
+          CustomErrorResponses:
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - DELETE
+              - GET
+              - HEAD
+              - OPTIONS
+              - PATCH
+              - POST
+              - PUT
+            TargetOriginId: PersonalPresence
+            ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: redirect-to-https
+          ViewerCertificate:
+            CloudFrontDefaultCertificate: 'true'  
