@@ -86,4 +86,5 @@ resources:
                 Forward: none
             ViewerProtocolPolicy: redirect-to-https
           ViewerCertificate:
-            CloudFrontDefaultCertificate: 'true'  
+            AcmCertificateArn: 'arn:aws:acm:us-east-1:240273936960:certificate/aa3f6c60-0966-40f1-93d3-03bc1308aa4f'
+            SslSupportMethod: 'sni-only'
