@@ -46,7 +46,7 @@ const withNamedLocation = data => {
 
                 default:
                     data.place.name = data.place.location.address.city
-                    data.label = `in ${data.place.location.address.city}, ${data.place.location.address.country}`
+                    data.label = `somewhere in ${data.place.location.address.city}, ${data.place.location.address.country}`
                     break
             }
     }
@@ -55,7 +55,6 @@ const withNamedLocation = data => {
 
 const toSingleLocation = (previousActivity, activity) => {
     if (previousActivity) {
-
         // We've already got some place data.
         if (previousActivity.place) return previousActivity
         return Object.assign({}, previousActivity, activity)
@@ -78,7 +77,7 @@ const figureItOut = _ => (
     .then(activities => Promise.all(activities.map(withEnhancedLocation)))
 
     // Enrich with known locations.
-    .then(activities => activities.map(withNamedLocation))
+    .then(activities => activities.map(withNamedLocation).reverse())
 
     // Reduce to a single activity with a location.
     .then(activities => activities.reduce(toSingleLocation))
