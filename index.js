@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 const AWS = require('aws-sdk')
 const fetch = require('node-fetch')
+const handlebars = require('handlebars')
+const path = require('path')
+const fs = require('fs')
 
 const withEnhancedLocation = data => new Promise((resolve, reject) => {
     const params = [
@@ -61,7 +64,7 @@ const toSingleLocation = (previousActivity, activity) => {
 }
 
 const figureItOut = _ => (
-    fetch(`https://api.moves-app.com/api/1.1/user/storyline/daily?pastDays=3`, {
+    fetch(`https://api.moves-app.com/api/1.1/user/storyline/daily?pastDays=2`, {
         headers: {
             'Authorization': `Bearer ${process.env.MOVES_AUTHORIZATION_TOKEN}`
         }
@@ -81,14 +84,30 @@ const figureItOut = _ => (
     .then(activities => activities.reduce(toSingleLocation))
 )
 
+const toActivity = lastActivity => {
+    const data = {}
+    data.label = `Alex is ${lastActivity.label}`
+    return data
+}
+
+const toHtmlPage = data => {
+    const view = path.resolve(__dirname, "./views/index.html")
+    const template = handlebars.compile(fs.readFileSync(view, "utf8"))
+    return template(data)
+}
+
 const refreshState = event => {
     const s3 = new AWS.S3()
     return figureItOut()
-        .then(lastActivity => `Alex is ${lastActivity.label}`)
+        .then(toActivity)
+        .then(toHtmlPage)
         .then(string => new Buffer(string))
         .then(buffer => s3.putObject({
             Bucket: process.env.BUCKET,
             Key: 'index.html',
+            CacheControl: 'public, max-age=900',
+            ContentDisposition: 'inline',        
+            ContentType: 'text/html',
             Body: buffer,
           }).promise()
         )
